@@ -1,0 +1,26 @@
+---
+- name: Call a URL when an event is received
+  hosts: localhost
+  gather_facts: false
+  sources:
+    - ansible.eda.webhook:
+        host: 0.0.0.0
+        port: 5000
+  rules:
+    - name: Make HTTP request on webhook event
+      condition: event.payload is defined
+      action:
+        run_module:
+          name: ansible.builtin.uri
+          extra_vars:
+            ansible_connection: local
+          module_args:
+            url: "{{ event.payload.url | default('https://localhost:8080/post') }}"
+            method: POST
+            body_format: json
+            body:
+              event: "{{ event.payload }}"
+            headers:
+              Content-Type: application/json
+            status_code: [200, 201, 202]
+            return_content: true
